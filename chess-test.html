@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Engine Test</title>
+  <link rel="stylesheet" href="chess-styles.css">
+</head>
+<body>
+  <h1>Chess Engine Test</h1>
+  
+  <div id="container">
+    <div id="board-container">
+      <div id="chessboard"></div>
+      
+      <div id="controls">
+        <button id="new-game-btn">New Game</button>
+        <button id="undo-btn">Undo Move</button>
+        <button id="flip-board-btn">Flip Board</button>
+        <button id="toggle-highlights-btn">Show Legal Moves</button>
+      </div>
+    </div>
+    
+    <div id="info-panel">
+      <h2>Game Status</h2>
+      <div id="status">Current turn: white</div>
+      
+      <h3>FEN</h3>
+      <input type="text" id="fen-input" placeholder="Enter FEN position">
+      <button id="load-fen-btn">Load Position</button>
+      
+      <h3>Move History</h3>
+      <div id="move-log"></div>
+    </div>
+  </div>
+  
+  <div id="promotion-popup">
+    <div class="promotion-buttons">
+      <button data-piece="q">♕</button>
+      <button data-piece="r">♖</button>
+      <button data-piece="b">♗</button>
+      <button data-piece="n">♘</button>
+    </div>
+  </div>
+
+  <!-- Import the UI script as a module -->
+  <script type="module" src="chess-ui.js"></script>
+</body>
+</html>
