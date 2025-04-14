@@ -41,48 +41,65 @@ let pendingPromotion = null;
 // Initialize the board
 function initializeBoard() {
   const chessboard = document.getElementById("chessboard");
+  console.log("Chessboard element:", chessboard); // Debug log
+  if (!chessboard) {
+    console.error("Chessboard element not found");
+    return;
+  }
+
   chessboard.innerHTML = "";
 
   // Create squares
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      // Find the visual position (what the user sees) based on logical position and board orientation
-      const visualRow = boardFlipped ? 7 - row : row;
-      const visualCol = boardFlipped ? 7 - col : col;
-
+      // Create the square
       const square = document.createElement("div");
       square.className = "square " + ((row + col) % 2 === 0 ? "light" : "dark");
-
-      // Store the logical position (for game moves)
       square.dataset.row = row;
       square.dataset.col = col;
 
-      // Calculate the visual position in the grid
+      // Position the square based on board orientation
+      const visualRow = boardFlipped ? 7 - row : row;
+      const visualCol = boardFlipped ? 7 - col : col;
       square.style.gridRow = visualRow + 1;
       square.style.gridColumn = visualCol + 1;
 
-      // Add coordinates
-      const fileCoord = document.createElement("span");
-      fileCoord.className = "coordinates file-coord";
-      fileCoord.textContent = String.fromCharCode(97 + col); // 'a' to 'h'
-      if (row === 7) {
+      // Bottom row - add file coordinates (a-h)
+      const isBottomRow =
+        (boardFlipped && row === 0) || (!boardFlipped && row === 7);
+      if (isBottomRow) {
+        const fileCoord = document.createElement("div");
+        fileCoord.className = "file-coord";
+        fileCoord.textContent = String.fromCharCode(97 + col); // 'a' to 'h'
         square.appendChild(fileCoord);
       }
 
-      const rankCoord = document.createElement("span");
-      rankCoord.className = "coordinates rank-coord";
-      rankCoord.textContent = 8 - row; // '8' to '1'
-      if (col === 0) {
+      // Left column - add rank coordinates (8-1)
+      const isLeftColumn =
+        (boardFlipped && col === 7) || (!boardFlipped && col === 0);
+      if (isLeftColumn) {
+        const rankCoord = document.createElement("div");
+        rankCoord.className = "rank-coord";
+        rankCoord.textContent = 8 - row; // '8' to '1'
         square.appendChild(rankCoord);
       }
 
-      // The handler uses logical coordinates (not visual)
+      // Add click handler
       square.addEventListener("click", () => handleSquareClick(row, col));
+
+      // Add the square to the board
       chessboard.appendChild(square);
     }
   }
 
   updateBoard();
+
+  console.log("Board initialized, checking for coordinate spans...");
+  const fileCoords = document.querySelectorAll(".file-coord");
+  const rankCoords = document.querySelectorAll(".rank-coord");
+  console.log(
+    `Found ${fileCoords.length} file coordinates and ${rankCoords.length} rank coordinates`
+  );
 }
 
 // Update the board with the current game state
@@ -95,7 +112,15 @@ function updateBoard() {
       );
       if (!square) continue;
 
-      square.textContent = ""; // Clear the square except for coordinate labels
+      Array.from(square.childNodes).forEach((node) => {
+        if (
+          !node.classList ||
+          (!node.classList.contains("file-coord") &&
+            !node.classList.contains("rank-coord"))
+        ) {
+          square.removeChild(node);
+        }
+      });
 
       // Preserve any coordinate spans
       const fileCoord = square.querySelector(".file-coord");
@@ -437,4 +462,9 @@ export function initChessUI() {
 }
 
 // Automatically initialize when imported
-document.addEventListener("DOMContentLoaded", initChessUI);
+document.addEventListener("DOMContentLoaded", () => {
+  // Initialize the UI
+  initChessUI();
+
+  console.log("Chess UI initialization complete");
+});
