@@ -19,111 +19,116 @@ export function initializeConnection() {
   return new Promise((resolve, reject) => {
     try {
       // Create Socket.io connection (make sure the Socket.io client is properly loaded)
-      if (typeof io === 'undefined') {
-        console.error('Socket.io not loaded');
-        reject(new Error('Socket.io not loaded'));
+      if (typeof io === "undefined") {
+        console.error("Socket.io not loaded");
+        reject(new Error("Socket.io not loaded"));
         return;
       }
-      
-      socket = io("https://chess-engine-2-ad2b.onrender.com");
-      console.log('Attempting to connect...');
-      
+
+      const isLocalhost = window.location.hostname === "localhost";
+      const backendURL = isLocalhost
+        ? "http://localhost:3000"
+        : "https://chess-engine-2-ad2b.onrender.com/";
+
+      socket = io(backendURL);
+
+      console.log("Attempting to connect...");
+
       // Handle connection
-      socket.on('connected', (socketId) => {
-        console.log('Connected to server with ID:', socketId);
+      socket.on("connected", (socketId) => {
+        console.log("Connected to server with ID:", socketId);
         isConnected = true;
-        
+
         if (callbacks.onConnectionStatusChange) {
           callbacks.onConnectionStatusChange(true);
         }
-        
+
         resolve(socketId);
       });
-      
+
       // Handle disconnection
-      socket.on('disconnect', () => {
-        console.log('Disconnected from server');
+      socket.on("disconnect", () => {
+        console.log("Disconnected from server");
         isConnected = false;
-        
+
         if (callbacks.onConnectionStatusChange) {
           callbacks.onConnectionStatusChange(false);
         }
       });
-      
+
       // Handle errors
-      socket.on('error', (error) => {
-        console.error('Socket error:', error);
+      socket.on("error", (error) => {
+        console.error("Socket error:", error);
         if (callbacks.onError) {
           callbacks.onError(error);
         }
       });
-      
+
       // Game created event
-      socket.on('game-created', (data) => {
-        console.log('Game created:', data);
+      socket.on("game-created", (data) => {
+        console.log("Game created:", data);
         gameId = data.gameId;
         playerColor = data.playerColor;
-        
+
         if (callbacks.onGameCreated) {
           callbacks.onGameCreated(data);
         }
       });
-      
+
       // Game joined event
-      socket.on('game-joined', (data) => {
-        console.log('Game joined:', data);
+      socket.on("game-joined", (data) => {
+        console.log("Game joined:", data);
         gameId = data.gameId;
         playerColor = data.playerColor;
-        
+
         if (callbacks.onGameJoined) {
           callbacks.onGameJoined(data);
         }
       });
-      
+
       // Opponent joined event
-      socket.on('opponent-joined', (data) => {
-        console.log('Opponent joined:', data);
-        
+      socket.on("opponent-joined", (data) => {
+        console.log("Opponent joined:", data);
+
         if (callbacks.onOpponentJoined) {
           callbacks.onOpponentJoined(data);
         }
       });
-      
+
       // Opponent move event - this is the key part that needs to be fixed
-      socket.on('opponent-move', (data) => {
-        console.log('Opponent move received:', data);
-        
+      socket.on("opponent-move", (data) => {
+        console.log("Opponent move received:", data);
+
         // Make sure the data is properly formatted
         if (!data.from || !data.to) {
-          console.error('Invalid move data received:', data);
+          console.error("Invalid move data received:", data);
           return;
         }
-        
+
         if (callbacks.onOpponentMove) {
           callbacks.onOpponentMove(data);
         }
       });
-      
+
       // Opponent disconnected event
-      socket.on('opponent-disconnected', () => {
-        console.log('Opponent disconnected');
-        
+      socket.on("opponent-disconnected", () => {
+        console.log("Opponent disconnected");
+
         if (callbacks.onOpponentDisconnected) {
           callbacks.onOpponentDisconnected();
         }
       });
-      
+
       // Game restart event
-      socket.on('game-restart', () => {
-        console.log('Game restarted');
-        
+      socket.on("game-restart", () => {
+        console.log("Game restarted");
+
         if (callbacks.onGameRestart) {
           callbacks.onGameRestart();
         }
       });
-      
     } catch (error) {
-      console.error('Failed to initialize connection:', error);
+      console.error("Failed to initialize connection:", error);
       reject(error);
     }
   });
@@ -134,11 +139,11 @@ export function initializeConnection() {
  */
 export function createGame() {
   if (!isConnected) {
-    console.error('Not connected to server');
+    console.error("Not connected to server");
     return;
   }
-  
-  socket.emit('create-game');
+
+  socket.emit("create-game");
 }
 
 /**
@@ -147,11 +152,11 @@ export function createGame() {
  */
 export function joinGame(id) {
   if (!isConnected) {
-    console.error('Not connected to server');
+    console.error("Not connected to server");
     return;
   }
-  
-  socket.emit('join-game', id);
+
+  socket.emit("join-game", id);
 }
 
 /**
@@ -162,21 +167,21 @@ export function joinGame(id) {
  */
 export function sendMove(from, to, promotion = null) {
   if (!isConnected || !gameId) {
-    console.error('Not connected to a game');
+    console.error("Not connected to a game");
     return;
   }
-  
+
   // Ensure we're sending string positions (algebraic notation)
   const fromStr = from.toAlgebraic ? from.toAlgebraic() : from;
   const toStr = to.toAlgebraic ? to.toAlgebraic() : to;
-  
+
   console.log(`Sending move: ${fromStr} to ${toStr}`);
-  
-  socket.emit('move', {
+
+  socket.emit("move", {
     gameId,
     from: fromStr,
     to: toStr,
-    promotion
+    promotion,
   });
 }
 
@@ -185,11 +190,11 @@ export function sendMove(from, to, promotion = null) {
  */
 export function restartGame() {
   if (!isConnected || !gameId) {
-    console.error('Not connected to a game');
+    console.error("Not connected to a game");
     return;
   }
-  
-  socket.emit('restart-game', gameId);
+
+  socket.emit("restart-game", gameId);
 }
 
 /**
