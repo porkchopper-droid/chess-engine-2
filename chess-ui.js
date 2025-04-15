@@ -38,6 +38,10 @@ let showLegalMoves = false;
 let legalMoves = [];
 let pendingPromotion = null;
 
+// Exposed API for network integration
+export let canPlayerMove = () => true; // Will be overridden by UI manager if online
+export let isOnline = () => false; // Will be overridden by UI manager if online
+
 // Initialize the board
 function initializeBoard() {
   const chessboard = document.getElementById("chessboard");
@@ -225,6 +229,12 @@ function updateBoard() {
 function handleSquareClick(row, col) {
   const position = new Position(row, col);
 
+  // In online games, only allow moves if it's your turn
+  if (!canPlayerMove()) {
+    console.log("Not your turn");
+    return;
+  }
+
   // If there's a pending promotion, ignore clicks
   if (pendingPromotion) return;
 
@@ -268,14 +278,7 @@ function handleSquareClick(row, col) {
       }
 
       // Make the move
-      const result = game.makeMove(selectedSquare, position);
-
-      if (result.success) {
-        // Play move sound (just console log for now)
-        console.log("Move made:", result.move.notation);
-      } else {
-        console.error("Move failed:", result.error);
-      }
+      makeMove(selectedSquare, position);
     }
 
     // Reset selection
@@ -317,20 +320,21 @@ function handlePromotion(piece) {
   document.getElementById("promotion-popup").style.display = "none";
 
   // Make the move with the chosen promotion piece
-  const result = game.makeMove(
-    pendingPromotion.from,
-    pendingPromotion.to,
-    piece.toUpperCase()
-  );
-
-  if (result.success) {
-    console.log("Promotion to", piece, "completed");
-  } else {
-    console.error("Promotion failed:", result.error);
-  }
+  makeMove(pendingPromotion.from, pendingPromotion.to, piece.toUpperCase());
 
   pendingPromotion = null;
   updateBoard();
+}
+
+// Execute a move in the game
+export function makeMove(from, to, promotion = null) {
+  // Make the move in the game
+  return game.makeMove(from, to, promotion);
+}
+
+// Execute an opponent's move
+export function makeOpponentMove(from, to, promotion = null) {
+  return game.makeMove(from, to, promotion);
 }
 
 // Update the status message
@@ -395,10 +399,10 @@ function setupEventListeners() {
   const newGameBtn = document.getElementById("new-game-btn");
   if (newGameBtn) {
     newGameBtn.addEventListener("click", () => {
-      game.reset();
-      selectedSquare = null;
-      legalMoves = [];
-      updateBoard();
+      // This will be overridden by the UI manager for online games
+      if (!isOnline()) {
+        resetGame();
+      }
     });
   }
 
@@ -406,6 +410,12 @@ function setupEventListeners() {
   const undoBtn = document.getElementById("undo-btn");
   if (undoBtn) {
     undoBtn.addEventListener("click", () => {
+      // Only allow undo in local games
+      if (isOnline()) {
+        alert("Cannot undo moves in online games.");
+        return;
+      }
+      
       const success = game.undoLastMove();
       if (success) {
         selectedSquare = null;
@@ -419,8 +429,7 @@ function setupEventListeners() {
   const flipBoardBtn = document.getElementById("flip-board-btn");
   if (flipBoardBtn) {
     flipBoardBtn.addEventListener("click", () => {
-      boardFlipped = !boardFlipped;
-      initializeBoard();
+      flipBoard(!boardFlipped);
     });
   }
 
@@ -442,6 +451,12 @@ function setupEventListeners() {
 
   if (loadFenBtn && fenInput) {
     loadFenBtn.addEventListener("click", () => {
+      // Only allow loading FEN in local games
+      if (isOnline()) {
+        alert("Cannot load positions in online games.");
+        return;
+      }
+      
       const fen = fenInput.value;
       try {
         game = loadGameFromFEN(fen);
@@ -453,6 +468,20 @@ function setupEventListeners() {
       }
     });
   }
+}
+
+// Reset the game to initial state
+export function resetGame() {
+  game.reset();
+  selectedSquare = null;
+  legalMoves = [];
+  updateBoard();
+}
+
+// Flip the chess board
+export function flipBoard(flip) {
+  boardFlipped = flip;
+  initializeBoard();
 }
 
 // Initialize the UI

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chess Engine Test</title>
     <link rel="stylesheet" href="chess-styles.css" />
+    <!-- Socket.io client script from CDN -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   </head>
   <body>
     <h1>Chess Engine 2.0</h1>
@@ -65,5 +67,7 @@
 
     <!-- Import the UI script as a module -->
     <script type="module" src="chess-ui.js"></script>
+    <!-- Import the UI manager for network integration -->
+    <script type="module" src="chess-ui-manager.js"></script>
   </body>
 </html>
