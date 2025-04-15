@@ -1,21 +1,27 @@
 /**
  * @fileoverview Chess game server using Socket.io
- * 
+ *
  * This server facilitates P2P connections between chess players,
  * manages game rooms, and handles player moves.
  */
 
-import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import path from 'path';
+import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import cors from "cors";
 
 // Setup Express server
 const app = express();
+app.use(cors());
 const server = createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -25,153 +31,153 @@ const __dirname = dirname(__filename);
 app.use(express.static(__dirname));
 
 // Add a route for the root path
-app.get('/', (req, res) => {
-  res.sendFile(join(__dirname, 'chess-test.html'));
+app.get("/", (req, res) => {
+  res.sendFile(join(__dirname, "chess-test.html"));
 });
 
 // Game rooms storage
 const games = {};
 
 // Handle socket connections
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-  
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
   // Send the socket ID to the client
-  socket.emit('connected', socket.id);
-  
+  socket.emit("connected", socket.id);
+
   // Handle create game request
-  socket.on('create-game', () => {
+  socket.on("create-game", () => {
     const gameId = generateGameId();
-    
+
     // Create a new game room
     games[gameId] = {
       id: gameId,
-      players: [{ id: socket.id, color: 'white' }],
-      currentTurn: 'white',
-      moves: []
+      players: [{ id: socket.id, color: "white" }],
+      currentTurn: "white",
+      moves: [],
     };
-    
+
     // Join the socket to the game room
     socket.join(gameId);
-    
+
     // Inform client of successful game creation
-    socket.emit('game-created', {
+    socket.emit("game-created", {
       gameId,
-      playerColor: 'white'
+      playerColor: "white",
     });
-    
+
     console.log(`Game created: ${gameId} by player ${socket.id}`);
   });
-  
+
   // Handle join game request
-  socket.on('join-game', (gameId) => {
+  socket.on("join-game", (gameId) => {
     const game = games[gameId];
-    
+
     // Check if game exists
     if (!game) {
-      socket.emit('error', { message: 'Game not found' });
+      socket.emit("error", { message: "Game not found" });
       return;
     }
-    
+
     // Check if game is already full
     if (game.players.length >= 2) {
-      socket.emit('error', { message: 'Game is full' });
+      socket.emit("error", { message: "Game is full" });
       return;
     }
-    
+
     // Add player to the game
-    game.players.push({ id: socket.id, color: 'black' });
-    
+    game.players.push({ id: socket.id, color: "black" });
+
     // Join the socket to the game room
     socket.join(gameId);
-    
+
     // Inform client of successful join
-    socket.emit('game-joined', {
+    socket.emit("game-joined", {
       gameId,
-      playerColor: 'black'
+      playerColor: "black",
     });
-    
+
     // Inform the other player that someone joined
-    socket.to(gameId).emit('opponent-joined', {
-      opponentId: socket.id
+    socket.to(gameId).emit("opponent-joined", {
+      opponentId: socket.id,
     });
-    
+
     console.log(`Player ${socket.id} joined game: ${gameId}`);
   });
-  
+
   // Handle move
-  socket.on('move', (data) => {
+  socket.on("move", (data) => {
     const { gameId, from, to, promotion } = data;
     const game = games[gameId];
-    
+
     // Check if game exists
     if (!game) {
-      socket.emit('error', { message: 'Game not found' });
+      socket.emit("error", { message: "Game not found" });
       return;
     }
-    
+
     // Find the player
-    const player = game.players.find(p => p.id === socket.id);
+    const player = game.players.find((p) => p.id === socket.id);
     if (!player) {
-      socket.emit('error', { message: 'Player not found in this game' });
+      socket.emit("error", { message: "Player not found in this game" });
       return;
     }
-    
+
     // Check if it's the player's turn
     if (player.color !== game.currentTurn) {
-      socket.emit('error', { message: 'Not your turn' });
+      socket.emit("error", { message: "Not your turn" });
       return;
     }
-    
+
     // Record the move
     game.moves.push({ from, to, promotion, player: player.color });
-    
+
     // Switch turns
-    game.currentTurn = game.currentTurn === 'white' ? 'black' : 'white';
-    
+    game.currentTurn = game.currentTurn === "white" ? "black" : "white";
+
     // Broadcast the move to the opponent
-    socket.to(gameId).emit('opponent-move', {
+    socket.to(gameId).emit("opponent-move", {
       from,
       to,
-      promotion
+      promotion,
     });
-    
+
     console.log(`Move in game ${gameId}: ${from} to ${to}`);
   });
-  
+
   // Handle game restart request
-  socket.on('restart-game', (gameId) => {
+  socket.on("restart-game", (gameId) => {
     const game = games[gameId];
-    
+
     // Check if game exists
     if (!game) {
-      socket.emit('error', { message: 'Game not found' });
+      socket.emit("error", { message: "Game not found" });
       return;
     }
-    
+
     // Reset game state
-    game.currentTurn = 'white';
+    game.currentTurn = "white";
     game.moves = [];
-    
+
     // Broadcast restart to all players in the game
-    io.to(gameId).emit('game-restart');
-    
+    io.to(gameId).emit("game-restart");
+
     console.log(`Game ${gameId} restarted by player ${socket.id}`);
   });
-  
+
   // Handle disconnection
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-    
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+
     // Find games where this socket is a player
     Object.entries(games).forEach(([gameId, game]) => {
-      const playerIndex = game.players.findIndex(p => p.id === socket.id);
-      
+      const playerIndex = game.players.findIndex((p) => p.id === socket.id);
+
       if (playerIndex !== -1) {
         // Notify the other player
-        socket.to(gameId).emit('opponent-disconnected');
+        socket.to(gameId).emit("opponent-disconnected");
         console.log(`Player ${socket.id} left game ${gameId}`);
-        
+
         // If no players left, clean up the game
         if (game.players.length <= 1) {
           delete games[gameId];

@@ -1,14 +1,15 @@
 {
-    "name": "chess-p2p",
-    "version": "1.0.0",
+    "name": "chess-engine",
+    "version": "2.0.0",
     "description": "P2P Chess Game with Socket.io",
     "main": "chess-server.js",
     "type": "module",
     "scripts": {
-      "start": "node chess-server.js"
+        "start": "node chess-server.js"
     },
     "dependencies": {
-      "express": "^4.18.2",
-      "socket.io": "^4.7.2"
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "socket.io": "^4.7.2"
     }
-  }
+}
