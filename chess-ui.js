@@ -42,6 +42,12 @@ let pendingPromotion = null;
 export let canPlayerMove = () => true; // Will be overridden by UI manager if online
 export let isOnline = () => false; // Will be overridden by UI manager if online
 
+let moveHandler = (from, to, promotion = null) => game.makeMove(from, to, promotion);
+
+export function setMoveHandler(handler) {
+  moveHandler = handler;
+}
+
 // Initialize the board
 function initializeBoard() {
   const chessboard = document.getElementById("chessboard");
@@ -278,7 +284,7 @@ function handleSquareClick(row, col) {
       }
 
       // Make the move
-      makeMove(selectedSquare, position);
+      moveHandler(selectedSquare, position);
     }
 
     // Reset selection
@@ -320,7 +326,8 @@ function handlePromotion(piece) {
   document.getElementById("promotion-popup").style.display = "none";
 
   // Make the move with the chosen promotion piece
-  makeMove(pendingPromotion.from, pendingPromotion.to, piece.toUpperCase());
+  moveHandler(pendingPromotion.from, pendingPromotion.to, piece.toUpperCase());
+
 
   pendingPromotion = null;
   updateBoard();
@@ -339,11 +346,14 @@ export function makeOpponentMove(from, to, promotion = null) {
 
 // Update the status message
 function updateStatus() {
-  let status = `Current turn: ${game.currentTurn}`;
+  const statusElement = document.getElementById("game-status");
+  if (!statusElement) return;
+
+  let status = `${game.currentTurn === 'white' ? 'White' : 'Black'} to move`;
 
   switch (game.gameStatus) {
     case GAME_STATUS.CHECK:
-      status += " - CHECK!";
+      status += " — CHECK!";
       break;
     case GAME_STATUS.CHECKMATE_WHITE:
       status = "Checkmate! White wins.";
@@ -352,24 +362,22 @@ function updateStatus() {
       status = "Checkmate! Black wins.";
       break;
     case GAME_STATUS.DRAW_STALEMATE:
-      status = "Game drawn by stalemate.";
+      status = "Draw — stalemate.";
       break;
     case GAME_STATUS.DRAW_INSUFFICIENT:
-      status = "Game drawn by insufficient material.";
+      status = "Draw — insufficient material.";
       break;
     case GAME_STATUS.DRAW_REPETITION:
-      status = "Game drawn by threefold repetition.";
+      status = "Draw — threefold repetition.";
       break;
     case GAME_STATUS.DRAW_FIFTY_MOVE:
-      status = "Game drawn by fifty-move rule.";
+      status = "Draw — fifty-move rule.";
       break;
   }
 
-  const statusElement = document.getElementById("status");
-  if (statusElement) {
-    statusElement.textContent = status;
-  }
+  statusElement.textContent = status;
 }
+
 
 // Update the move log
 function updateMoveLog() {
@@ -489,6 +497,8 @@ export function initChessUI() {
   initializeBoard();
   setupEventListeners();
 }
+
+export { updateBoard };
 
 // Automatically initialize when imported
 document.addEventListener("DOMContentLoaded", () => {

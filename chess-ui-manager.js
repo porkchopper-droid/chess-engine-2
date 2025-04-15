@@ -8,6 +8,7 @@
 import * as ChessUI from './chess-ui.js';
 import * as Network from './chess-network.js';
 import { Position } from './position.js';
+import { setMoveHandler, updateBoard } from './chess-ui.js';
 
 // Online game state
 let isOnlineGame = false;
@@ -18,24 +19,19 @@ let canMakeMove = false;
  */
 export function init() {
   setupNetworkCallbacks();
+  setMoveHandler(wrappedMakeMove);
   setupNetworkControls();
   updateNetworkStatus();
   
-  // Override chess-ui functions to integrate with network functionality
-  const originalMakeMove = ChessUI.makeMove;
-  ChessUI.makeMove = (from, to, promotion = null) => {
-    // First call the original function
-    const result = originalMakeMove(from, to, promotion);
-    
-    // If successful and it's an online game, send the move
+  function wrappedMakeMove(from, to, promotion = null) {
+    const result = ChessUI.makeMove(from, to, promotion);
     if (result.success && isOnlineGame) {
       Network.sendMove(from, to, promotion);
       canMakeMove = false;
       updateNetworkStatus();
     }
-    
     return result;
-  };
+  }
   
   // Export additional functions to be called from chess-ui
   ChessUI.canPlayerMove = () => {
@@ -115,6 +111,7 @@ function handleOpponentMove(data) {
     console.log("Opponent's move:", result.move.notation);
     canMakeMove = true;
     updateNetworkStatus();
+    updateBoard();
   } else {
     console.error("Failed to apply opponent's move:", result.error);
   }
