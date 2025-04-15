@@ -25,7 +25,7 @@ export function initializeConnection() {
         return;
       }
       
-      socket = io();
+      socket = io("https://chess-engine-2-02ts.onrender.com");
       console.log('Attempting to connect...');
       
       // Handle connection
