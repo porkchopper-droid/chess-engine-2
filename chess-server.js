@@ -9,6 +9,7 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { fileURLToPath } from "url";
+import path from "path"
 import { dirname, join } from "path";
 import cors from "cors";
 
@@ -27,8 +28,8 @@ const io = new Server(server, {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Serve static files from current directory
-app.use(express.static(__dirname));
+// Serve static files from "public" directory
+app.use(express.static(path.join(__dirname, "public")));
 
 // Add a route for the root path
 app.get("/", (req, res) => {

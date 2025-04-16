@@ -38,8 +38,9 @@ let showLegalMoves = false;
 let legalMoves = [];
 let pendingPromotion = null;
 
-// Exposed API for network integration
+// // Exposed API for network integration
 export let canPlayerMove = () => true; // Will be overridden by UI manager if online
+
 export let isOnline = () => false; // Will be overridden by UI manager if online
 
 let moveHandler = (from, to, promotion = null) => game.makeMove(from, to, promotion);

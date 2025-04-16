@@ -33,13 +33,7 @@ export function init() {
     return result;
   }
   
-  // Export additional functions to be called from chess-ui
-  ChessUI.canPlayerMove = () => {
-    if (!isOnlineGame) return true;
-    return canMakeMove;
-  };
-  
-  ChessUI.isOnline = () => isOnlineGame;
+  let isOnlineGame = true;
 }
 
 /**
